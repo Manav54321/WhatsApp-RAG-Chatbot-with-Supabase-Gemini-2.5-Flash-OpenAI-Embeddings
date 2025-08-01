@@ -1,0 +1,1 @@
+# WhatsApp-RAG-Chatbot-with-Supabase-Gemini-2.5-Flash-OpenAI-Embeddings
