@@ -1,0 +1,505 @@
+{
+  "name": "AI WhatsApp RAG Chatbot using Supabase, Gemini 2.5 Flash & OpenAI Embeddings",
+  "nodes": [
+    {
+      "parameters": {
+        "mode": "retrieve-as-tool",
+        "toolDescription": "call this tool to reach the goal",
+        "tableName": {
+          "__rl": true,
+          "value": "documents",
+          "mode": "list",
+          "cachedResultName": "documents"
+        },
+        "options": {}
+      },
+      "type": "@n8n/n8n-nodes-langchain.vectorStoreSupabase",
+      "typeVersion": 1.3,
+      "position": [
+        480,
+        496
+      ],
+      "id": "d02befa0-18c6-4aa6-8c94-e84f6993a406",
+      "name": "Retrieve Context from Supabase",
+      "credentials": {
+        "supabaseApi": {
+          "id": "QkeJlJh5cCiuLpvg",
+          "name": "Supabase account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "updates": [
+          "messages"
+        ],
+        "options": {}
+      },
+      "type": "n8n-nodes-base.whatsAppTrigger",
+      "typeVersion": 1,
+      "position": [
+        -304,
+        560
+      ],
+      "id": "0a1543fa-c9ce-4d7a-8466-c778bb532cf9",
+      "name": "New WhatsApp Message",
+      "webhookId": "ec046705-b8f2-4b88-9b98-4fd99975f432",
+      "credentials": {
+        "whatsAppTriggerApi": {
+          "id": "yVPQQ9GPjNKE9nkZ",
+          "name": "whatsApp_OAuth_api"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "rules": {
+          "values": [
+            {
+              "conditions": {
+                "options": {
+                  "caseSensitive": true,
+                  "leftValue": "",
+                  "typeValidation": "strict",
+                  "version": 2
+                },
+                "conditions": [
+                  {
+                    "leftValue": "={{ $json.messages[0].text }}",
+                    "rightValue": "",
+                    "operator": {
+                      "type": "object",
+                      "operation": "exists",
+                      "singleValue": true
+                    },
+                    "id": "dcd448ce-72f0-4c83-b721-3417a746473e"
+                  }
+                ],
+                "combinator": "and"
+              },
+              "renameOutput": true,
+              "outputKey": "query"
+            },
+            {
+              "conditions": {
+                "options": {
+                  "caseSensitive": true,
+                  "leftValue": "",
+                  "typeValidation": "strict",
+                  "version": 2
+                },
+                "conditions": [
+                  {
+                    "id": "8b2b9810-08c7-452f-a2e0-ba1453586919",
+                    "leftValue": "={{ $json.messages[0].document }}",
+                    "rightValue": "",
+                    "operator": {
+                      "type": "object",
+                      "operation": "exists",
+                      "singleValue": true
+                    }
+                  }
+                ],
+                "combinator": "and"
+              },
+              "renameOutput": true,
+              "outputKey": "document"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.switch",
+      "typeVersion": 3.2,
+      "position": [
+        -48,
+        560
+      ],
+      "id": "79a849a1-da91-4af8-9ba4-7e6e504e4eeb",
+      "name": "Check if Query or Document"
+    },
+    {
+      "parameters": {
+        "dataType": "binary",
+        "options": {}
+      },
+      "type": "@n8n/n8n-nodes-langchain.documentDefaultDataLoader",
+      "typeVersion": 1.1,
+      "position": [
+        1008,
+        1216
+      ],
+      "id": "50a072f5-e8ce-4eae-adf9-8fbf4fd494da",
+      "name": "Convert File to Text"
+    },
+    {
+      "parameters": {
+        "options": {}
+      },
+      "type": "@n8n/n8n-nodes-langchain.embeddingsOpenAi",
+      "typeVersion": 1.2,
+      "position": [
+        816,
+        1216
+      ],
+      "id": "3932f7f3-524e-40b1-87dd-c9ff1e85d95e",
+      "name": "Generate OpenAI Embeddings",
+      "credentials": {
+        "openAiApi": {
+          "id": "GVGOwCYLGI5SaqsK",
+          "name": "OpenAi account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "mode": "insert",
+        "tableName": {
+          "__rl": true,
+          "value": "documents",
+          "mode": "list",
+          "cachedResultName": "documents"
+        },
+        "options": {}
+      },
+      "type": "@n8n/n8n-nodes-langchain.vectorStoreSupabase",
+      "typeVersion": 1.3,
+      "position": [
+        896,
+        928
+      ],
+      "id": "75f6cdb9-ef4f-43cd-83ae-b8ceb602b876",
+      "name": "Store Embeddings in Supabase",
+      "credentials": {
+        "supabaseApi": {
+          "id": "QkeJlJh5cCiuLpvg",
+          "name": "Supabase account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "options": {}
+      },
+      "type": "@n8n/n8n-nodes-langchain.lmChatGoogleGemini",
+      "typeVersion": 1,
+      "position": [
+        352,
+        496
+      ],
+      "id": "d569775f-c2d0-4c12-bb89-fe36667de6ce",
+      "name": "Google Gemini LLM",
+      "credentials": {
+        "googlePalmApi": {
+          "id": "SuWwLWBsAfrDFgCm",
+          "name": "Google Gemini(PaLM) Api account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "promptType": "define",
+        "text": "={{ $json.messages[0].text }}",
+        "options": {}
+      },
+      "type": "@n8n/n8n-nodes-langchain.agent",
+      "typeVersion": 2.1,
+      "position": [
+        368,
+        272
+      ],
+      "id": "ee2b82a8-cd95-4ff0-8e42-3d67eedd848d",
+      "name": "RAG Query Agent"
+    },
+    {
+      "parameters": {
+        "operation": "send",
+        "phoneNumberId": "768049963047541",
+        "recipientPhoneNumber": "={{ $('New WhatsApp Message').item.json.contacts[0].wa_id }}",
+        "textBody": "={{ $json.output }}",
+        "additionalFields": {}
+      },
+      "type": "n8n-nodes-base.whatsApp",
+      "typeVersion": 1,
+      "position": [
+        912,
+        272
+      ],
+      "id": "8eeb7e2c-11de-4ea5-8287-3ef026427f3d",
+      "name": "Send WhatsApp Reply",
+      "webhookId": "e5e2f982-af07-4274-8937-88ef5109e71b",
+      "credentials": {
+        "whatsAppApi": {
+          "id": "LV22R0NzX9vZLEp9",
+          "name": "whatsapp_reply"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "content": "## Document Flow:\n\n* Fetch file URL from WhatsApp message\n* Download and convert file to readable text\n* Generate embeddings with OpenAI\n* Store embeddings in Supabase for future queries",
+        "height": 384,
+        "width": 960,
+        "color": 7
+      },
+      "type": "n8n-nodes-base.stickyNote",
+      "position": [
+        240,
+        736
+      ],
+      "typeVersion": 1,
+      "id": "a73408a1-1ea2-4867-9c3d-8b6d54989d7d",
+      "name": "Sticky Note"
+    },
+    {
+      "parameters": {
+        "content": "## Query Flow:\n\n- Convert user query into embeddings (OpenAI)\n- Match embeddings with Supabase vectors to find context\n- Send retrieved context to Gemini 2.5 Flash for answer\n- Return concise response to WhatsApp user",
+        "height": 544,
+        "width": 560,
+        "color": 7
+      },
+      "type": "n8n-nodes-base.stickyNote",
+      "position": [
+        240,
+        80
+      ],
+      "typeVersion": 1,
+      "id": "1281e915-20c7-462e-9416-c980a14790c6",
+      "name": "Sticky Note1"
+    },
+    {
+      "parameters": {
+        "content": "## Message Check: \n- Determines if the message is a query(text) or a document upload. ",
+        "height": 304,
+        "color": 7
+      },
+      "type": "n8n-nodes-base.stickyNote",
+      "position": [
+        -112,
+        432
+      ],
+      "typeVersion": 1,
+      "id": "9a40bc48-1dbe-4ed9-9a7e-d6bf86b2e935",
+      "name": "Sticky Note2"
+    },
+    {
+      "parameters": {
+        "content": "## Try It Out!\n### This n8n template demonstrates how to build a WhatsApp-based AI chatbot using **document retrieval (RAG)**.It stores documents in **Supabase** with **OpenAI embeddings** and generates user-friendly answers using **Gemini 2.5 Flash LLM**.\n\nUse cases: Turn your WhatsApp into a **knowledge assistant** for FAQs, customer support, or internal team knowledge.\n\n### How it works\n\n* **Trigger:** A WhatsApp webhook activates on every new message.\n* **Message Check:** Detects if the message is a document upload or a query.\n* **Document Handling:** File URL → text conversion → embeddings with OpenAI → stored in Supabase.\n* **Query Handling:** Query embeddings → retrieve context → Gemini 2.5 Flash generates response.\n* **Reply:** Sends the answer back to the user via WhatsApp.\n\n### How to use\n\n* Configure **WhatsApp Business API**, **Supabase**, and **OpenAI credentials** in n8n’s credential manager.\n* Upload documents via WhatsApp to populate the vector database.\n* Ask questions directly on WhatsApp — the bot retrieves context and replies instantly.\n\n### Requirements\n\n* WhatsApp Business API (or Twilio sandbox)\n* Supabase account (vector storage)\n* OpenAI API key (embeddings)\n* Gemini API access (LLM responses)\n\n### Need Help?\n\nDM me on [X (formerly Twitter)](https://x.com/manav170303) or email [titanfactz@gmail.com](mailto:titanfactz@gmail.com).\n\nAlways open to feedback and improvements!",
+        "height": 832,
+        "width": 800
+      },
+      "type": "n8n-nodes-base.stickyNote",
+      "position": [
+        -1168,
+        208
+      ],
+      "typeVersion": 1,
+      "id": "72e122e4-f577-43ef-bf2e-e51712ef7bd9",
+      "name": "Sticky Note3"
+    },
+    {
+      "parameters": {
+        "resource": "media",
+        "operation": "mediaUrlGet",
+        "mediaGetId": "={{ $json.messages[0].document.id }}"
+      },
+      "type": "n8n-nodes-base.whatsApp",
+      "typeVersion": 1,
+      "position": [
+        288,
+        928
+      ],
+      "id": "7698302b-cba7-43ed-abbb-c6c036cd1380",
+      "name": "Get Document URL",
+      "webhookId": "39934341-fa40-46c5-8c26-9aa2f2b3ffcf",
+      "credentials": {
+        "whatsAppApi": {
+          "id": "LV22R0NzX9vZLEp9",
+          "name": "whatsapp_reply"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "url": "={{ $json.url }}",
+        "authentication": "genericCredentialType",
+        "genericAuthType": "httpHeaderAuth",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        560,
+        928
+      ],
+      "id": "9eb653ec-15c8-4854-b841-7151efe2cf9d",
+      "name": "Download WhatsApp Document",
+      "credentials": {
+        "httpHeaderAuth": {
+          "id": "y4by5K1yYvLIIf84",
+          "name": "whatsapp"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "content": "## Document Upload Flow\n\nExample: Shows how a document is uploaded and detected in the workflow.  \n\n![Document Upload Example](https://github.com/Manav54321/WhatsApp-RAG-Chatbot-with-Supabase-Gemini-2.5-Flash-OpenAI-Embeddings/raw/main/screenshots/4956396C-F927-4308-9B7C-7F1CDEFE88F4_1_101_o.jpeg)\n",
+        "height": 832,
+        "width": 336
+      },
+      "type": "n8n-nodes-base.stickyNote",
+      "position": [
+        1296,
+        736
+      ],
+      "typeVersion": 1,
+      "id": "e0621b81-844e-4427-bee2-38ebbe0bd734",
+      "name": "Sticky Note4"
+    },
+    {
+      "parameters": {
+        "content": "## Contextual Answer Flow\n\nExample: Demonstrates how the bot retrieves context from Supabase and responds with Gemini 2.5 Flash.  \n\n![Contextual Answer Example](https://github.com/Manav54321/WhatsApp-RAG-Chatbot-with-Supabase-Gemini-2.5-Flash-OpenAI-Embeddings/raw/main/screenshots/5FB5C957-2435-4FA1-93BA-9C9E0A749BF2_1_101_o.jpeg)\n",
+        "height": 848,
+        "width": 336
+      },
+      "type": "n8n-nodes-base.stickyNote",
+      "position": [
+        1104,
+        -192
+      ],
+      "typeVersion": 1,
+      "id": "001539b5-1ea9-4656-ad10-bf07cb77393b",
+      "name": "Sticky Note5"
+    }
+  ],
+  "pinData": {},
+  "connections": {
+    "Retrieve Context from Supabase": {
+      "ai_tool": [
+        [
+          {
+            "node": "RAG Query Agent",
+            "type": "ai_tool",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "New WhatsApp Message": {
+      "main": [
+        [
+          {
+            "node": "Check if Query or Document",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Check if Query or Document": {
+      "main": [
+        [
+          {
+            "node": "RAG Query Agent",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Get Document URL",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Convert File to Text": {
+      "ai_document": [
+        [
+          {
+            "node": "Store Embeddings in Supabase",
+            "type": "ai_document",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Generate OpenAI Embeddings": {
+      "ai_embedding": [
+        [
+          {
+            "node": "Store Embeddings in Supabase",
+            "type": "ai_embedding",
+            "index": 0
+          },
+          {
+            "node": "Retrieve Context from Supabase",
+            "type": "ai_embedding",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Store Embeddings in Supabase": {
+      "main": [
+        []
+      ]
+    },
+    "Google Gemini LLM": {
+      "ai_languageModel": [
+        [
+          {
+            "node": "RAG Query Agent",
+            "type": "ai_languageModel",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "RAG Query Agent": {
+      "main": [
+        [
+          {
+            "node": "Send WhatsApp Reply",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Get Document URL": {
+      "main": [
+        [
+          {
+            "node": "Download WhatsApp Document",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Download WhatsApp Document": {
+      "main": [
+        [
+          {
+            "node": "Store Embeddings in Supabase",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "active": false,
+  "settings": {
+    "executionOrder": "v1"
+  },
+  "versionId": "c56dee3a-8a9e-4dd0-a684-856854f8eb90",
+  "meta": {
+    "templateCredsSetupCompleted": true,
+    "instanceId": "9c8f658dbece48b519a8ad7757c7d7db7a30c5f3fd29c9dc8afae32fe0c7711a"
+  },
+  "id": "InxpOwOAX7qfXIvX",
+  "tags": []
+}
